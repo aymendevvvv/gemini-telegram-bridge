@@ -14,7 +14,6 @@ class SessionManager:
         session = self.sessions.get(chat_id)
 
         if session:
-            # Check expiry
             if now - session.last_used < SESSION_TTL:
                 session.last_used = now
                 return session
@@ -31,7 +30,6 @@ class SessionManager:
     async def cleanup(self):
         """Periodically remove expired sessions"""
         while True:
-            print("cleanup")
             now = time.time()
             expired = []
 

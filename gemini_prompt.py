@@ -39,7 +39,6 @@ class GeminiPromptSession:
           "gemini",
           "--yolo",
           "--prompt", prompt,
-          "-m", "gemini-2.5-flash-lite",
           "--output-format", "text",
           stdout=asyncio.subprocess.PIPE,
           stderr=asyncio.subprocess.DEVNULL
