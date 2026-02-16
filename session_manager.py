@@ -1,44 +1,39 @@
 import time
-import asyncio
-from gemini_prompt import GeminiPromptSession
-from rich import print
+from telegram.ext import ContextTypes
+from gemini_session import GeminiSession
 from config import SESSION_TTL
 
+
 class SessionManager:
-    def __init__(self):
-        self.sessions = {}  # chat_id -> session
+  def __init__(self):
+    self.sessions = {}  # chat_id -> session
 
-    async def get_session(self, chat_id: int) -> GeminiPromptSession:
-        now = time.time()
+  async def get_session(self, chat_id: int) -> GeminiSession:
+    now = time.time()
 
-        session = self.sessions.get(chat_id)
+    session = self.sessions.get(chat_id)
 
-        if session:
-            if now - session.last_used < SESSION_TTL:
-                session.last_used = now
-                return session
-            else:
-                # await session.close() not implemented yet
-                del self.sessions[chat_id]
-
-        # Create new session
-        session = GeminiPromptSession()
+    if session:
+      if now - session.last_used < SESSION_TTL:
         session.last_used = now
-        self.sessions[chat_id] = session
         return session
+      else:
+        await session.delete()
 
-    async def cleanup(self):
-        """Periodically remove expired sessions"""
-        while True:
-            now = time.time()
-            expired = []
+    # Create new session
+    session = GeminiSession()
+    session.last_used = now
+    self.sessions[chat_id] = session
+    return session
 
-            for chat_id, session in self.sessions.items():
-                if now - session.last_used > SESSION_TTL:
-                    expired.append(chat_id)
+  async def cleanup(self, context: ContextTypes.DEFAULT_TYPE = None):
+    now = time.time()
+    expired = []
 
-            for chat_id in expired:
-                # await self.sessions[chat_id].close() not implemented yet
-                del self.sessions[chat_id]
+    for chat_id, session in self.sessions.items():
+      if now - session.last_used > SESSION_TTL:
+        expired.append(chat_id)
 
-            await asyncio.sleep(60)
+    for chat_id in expired:
+      await self.sessions[chat_id].delete()
+      del self.sessions[chat_id]
